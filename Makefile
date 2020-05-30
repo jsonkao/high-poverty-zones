@@ -27,3 +27,6 @@ school_zones.json: school_zones.geojson Makefile
 school_zones.geojson:
 	curl -o $@ \
 		'https://data.cityofnewyork.us/api/geospatial/xehh-f7pi?method=export&format=GeoJSON'
+
+clean:
+	rm -f {school_districts,school_zones}.{json,geojson}
