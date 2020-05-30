@@ -1,3 +1,17 @@
+main: school_districts_geo2topo.json school_districts_mstopo.json
+
+# The next two targets just for understanding differences b.t. toposimplify and
+# topoquantize and mapshaper
+school_districts_geo2topo.json: school_districts.geojson Makefile
+	geo2topo districts=$< | \
+		toposimplify -p 1 | \
+		topoquantize 1e6 \
+		> $@
+
+school_districts_mstopo.json: school_districts.geojson Makefile
+	mapshaper $< name=districts \
+		-o $@ format=topojson quantization=1e6
+
 school_districts.json: school_districts.geojson Makefile
 	# Import GeoJSON and set projection to NY Central.
 	# Import high_poverty.csv with District as string.
@@ -29,4 +43,4 @@ school_zones.geojson:
 		'https://data.cityofnewyork.us/api/geospatial/xehh-f7pi?method=export&format=GeoJSON'
 
 clean:
-	rm -f {school_districts,school_zones}.{json,geojson}
+	rm -f {school_districts,school_zones}*.{json,geojson}
