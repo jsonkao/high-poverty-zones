@@ -8,8 +8,10 @@ school_districts.json: school_districts.geojson Makefile
 		-i high_poverty.csv name=poverty string-fields=District \
 		-target districts \
 		-join poverty keys=school_dist,District \
+		-clean \
 		-o $@ format=topojson
 
+# Retrieve GeoJSON for school districts
 school_districts.geojson:
 	curl -o $@ \
 		'https://data.cityofnewyork.us/api/geospatial/r8nu-ymqj?method=export&format=GeoJSON'
