@@ -1,6 +1,9 @@
 KEY := $(shell cat census_key.txt)
 
 ny-albers-B02001.json: ny-albers.ndjson acs_B02001.ndjson Makefile
+	# Join the Albers NDJSON (d₀) and the ACS NDJSON (d₁)
+	# Map [d₀, d₁] to just d₀, calculating pop density using ACS data
+	# Reduce the NDJSON features into a FeatureCollection
 	ndjson-join 'd.id' ny-albers.ndjson acs_B02001.ndjson \
 		| ndjson-map 'd[0].properties = {density: Math.floor(d[1].B02001_005E / d[0].properties.ALAND * 2589975.2356)}, d[0]' \
 		| ndjson-reduce 'p.features.push(d), p' '{type: "FeatureCollection", features: []}' > $@
