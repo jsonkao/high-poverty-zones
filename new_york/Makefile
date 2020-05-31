@@ -1,8 +1,8 @@
 KEY := $(shell cat census_key.txt)
 
-ny-albers-B02001.ndjson: ny-albers.ndjson acs_B02001.ndjson
-	ndjson-join 'd.id' $^ > $@ | \
-		ndjson-map 'd[0].properties = {density: Math.floor(d[1].B02001 / d[0].properties.ALAND * 2589975.2356)}, d[0]' | \
+ny-albers-B02001.ndjson: ny-albers.ndjson acs_B02001.ndjson Makefile
+	ndjson-join 'd.id' ny-albers.ndjson acs_B02001.ndjson | \
+		ndjson-map 'd[0].properties = {density: Math.floor(d[1].B02001_005E / d[0].properties.ALAND * 2589975.2356)}, d[0]' | \
 		ndjson-reduce | \
 		ndjson-map '{type: "FeatureCollection", features: d}' > $@
 
