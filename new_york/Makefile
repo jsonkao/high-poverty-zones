@@ -1,25 +1,25 @@
 KEY := $(shell cat census_key.txt)
 
-ny-albers-B02001.ndjson: ny-albers.ndjson acs_B02001.ndjson Makefile
-	ndjson-join 'd.id' ny-albers.ndjson acs_B02001.ndjson | \
-		ndjson-map 'd[0].properties = {density: Math.floor(d[1].B02001_005E / d[0].properties.ALAND * 2589975.2356)}, d[0]' | \
-		ndjson-reduce 'p.features.push(d), p' '{type: "FeatureCollection", features: []}' > $@
+ny-albers-B02001.json: ny-albers.ndjson acs_B02001.ndjson Makefile
+	ndjson-join 'd.id' ny-albers.ndjson acs_B02001.ndjson \
+		| ndjson-map 'd[0].properties = {density: Math.floor(d[1].B02001_005E / d[0].properties.ALAND * 2589975.2356)}, d[0]' \
+		| ndjson-reduce 'p.features.push(d), p' '{type: "FeatureCollection", features: []}' > $@
 
 acs_B02001.ndjson:
 	# Curl the information
 	# Remove newlines between elements of an array
 	# Separate the array into multiple lines, removing the header row
 	# Reformat each line as a sensible object
-	curl 'https://api.census.gov/data/2018/acs/acs5?get=B02001_005E&for=tract:*&in=state:36&key=$(KEY)' | \
-		ndjson-cat | \
-		ndjson-split 'd.slice(1)' | \
-		ndjson-map '{id: d[1] + d[2] + d[3], B02001_005E: +d[0]}' > $@
+	curl 'https://api.census.gov/data/2018/acs/acs5?get=B02001_005E&for=tract:*&in=state:36&key=$(KEY)' \
+		| ndjson-cat \
+		| ndjson-split 'd.slice(1)' \
+		| ndjson-map '{id: d[1] + d[2] + d[3], B02001_005E: +d[0]}' > $@
 
 ny-albers.ndjson: shapefiles/cb_2019_36_tract_500k.shp
-	shp2json $< | \
-	geoproject 'd3.geoConicEqualArea().parallels([40, 45]).rotate([75, 0]).fitSize([960, 960], d)' | \
-	ndjson-split 'd.features' | \
-	ndjson-map 'd.id = d.properties.GEOID, d' > $@
+	shp2json $< \
+	| geoproject 'd3.geoConicEqualArea().parallels([40, 45]).rotate([75, 0]).fitSize([960, 960], d)' \
+	| ndjson-split 'd.features' \
+	| ndjson-map 'd.id = d.properties.GEOID, d' > $@
 
 ny-albers-mapshaper.json: shapefiles/cb_2014_06_tract_500k.shp Makefile
 	mapshaper $< \
