@@ -1,1 +1,8 @@
 .DS_Store
+
+census_key.txt
+
+*.zip
+shapefiles/
+
+*.ndjson
