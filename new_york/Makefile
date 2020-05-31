@@ -1,12 +1,15 @@
 KEY := $(shell cat census_key.txt)
 
-ny-albers-B02001.json: ny-albers.ndjson acs_B02001.ndjson Makefile
+ny-albers-B02001.svg: ny-albers.ndjson acs_B02001.ndjson Makefile
 	# Join the Albers NDJSON (d₀) and the ACS NDJSON (d₁)
 	# Map [d₀, d₁] to just d₀, calculating pop density using ACS data
 	# Reduce the NDJSON features into a FeatureCollection
 	ndjson-join 'd.id' ny-albers.ndjson acs_B02001.ndjson \
 		| ndjson-map 'd[0].properties = {density: Math.floor(d[1].B02001_005E / d[0].properties.ALAND * 2589975.2356)}, d[0]' \
-		| ndjson-reduce 'p.features.push(d), p' '{type: "FeatureCollection", features: []}' > $@
+		| ndjson-map -r d3 \
+  		'(d.properties.fill = d3.scaleSequential(d3.interpolateViridis).domain([0, 4000])(d.properties.density), d)' \
+		| geo2svg --newline-delimited --stroke none --precision 1 -w 960 -h 960 \
+		> $@
 
 acs_B02001.ndjson:
 	# Curl the information
