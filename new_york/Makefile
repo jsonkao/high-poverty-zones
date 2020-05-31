@@ -1,12 +1,23 @@
 KEY := $(shell cat census_key.txt)
 
-ny-albers-B02001.svg: ny-albers.ndjson acs_B02001.ndjson Makefile
+ny-albers-B02001.json: ny-albers.ndjson acs_B02001.ndjson Makefile
 	# Join the Albers NDJSON (d₀) and the ACS NDJSON (d₁)
 	# Map [d₀, d₁] to just d₀, calculating pop density using ACS data
-	# Reduce the NDJSON features into a FeatureCollection
+	# Convert to TopoJSON (6.0M to 3.8M)
+	# Simplify using planar area threshold of 1 square px (1.8M)
+	# Quantize (0.9M)
+	# Merge tracts by state FIPS + county FIPS (workks bc tracts compose
+	#   hierarchically into counties)
+	# Compute internal border mesh using topomerge, overwriting old polygons
 	ndjson-join 'd.id' ny-albers.ndjson acs_B02001.ndjson \
 		| ndjson-map 'd[0].properties = {density: Math.floor(d[1].B02001_005E / d[0].properties.ALAND * 2589975.2356)}, d[0]' \
-		| ndjson-map -r d3 \
+		| geo2topo --newline-delimited tracts=- \
+		| toposimplify -p 1 -f \
+		| topoquantize 1e5 \
+		| topomerge --key 'd.id.slice(0, 5)' counties=tracts \
+		| topomerge --mesh --filter 'a !== b' counties=counties \
+		> $@
+		#| ndjson-map -r d3 \
   		'(d.properties.fill = d3.scaleSequential(d3.interpolateViridis).domain([0, 4000])(d.properties.density), d)' \
 		| geo2svg --newline-delimited --stroke none --precision 1 -w 960 -h 960 \
 		> $@
